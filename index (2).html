@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fliqlo Clock - Thời tiết TP.HCM</title>
+  <style>
+/* ============================================
+   FLIP CLOCK STYLES
+   ============================================ */
+
+.flip-clock-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100dvh;
+  background: #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.flip-clock-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 1;
+  padding-top: 2rem;
+  padding-bottom: 6rem;
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.flip-clock-main::-webkit-scrollbar {
+  display: none;
+}
+
+.flip-clock-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ============================================
+   FLIP UNIT
+   ============================================ */
+
+.flip-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flip-unit__cards {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* ============================================
+   COLON SEPARATOR
+   ============================================ */
+
+.flip-colon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0 0.25rem;
+}
+
+.flip-colon__dot {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.flip-colon__dot--small {
+  width: 0.625rem;
+  height: 0.625rem;
+  gap: 0.75rem;
+}
+
+/* ============================================
+   AM/PM INDICATOR
+   ============================================ */
+
+.flip-ampm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.02em;
+  margin-bottom: -1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   DATE DISPLAY (Vietnamese)
+   ============================================ */
+
+.flip-date-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  animation: dateFadeIn 0.8s ease-out;
+  padding: 0 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.flip-date-greeting {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.05em;
+  text-align: center;
+  animation: dateSlideIn 0.6s ease-out;
+}
+
+.flip-date-weekday {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(2.8rem, 7vw, 4rem);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.06em;
+  text-align: center;
+  animation: dateSlideIn 0.6s ease-out 0.1s both;
+}
+
+.flip-date-full {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.04em;
+  text-align: center;
+  animation: dateSlideIn 0.6s ease-out 0.2s both;
+}
+
+.flip-date-time-text {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.15em;
+  text-align: center;
+  margin-top: 0.25rem;
+  animation: dateSlideIn 0.6s ease-out 0.3s both;
+}
+
+@keyframes dateFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dateSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   FLOATING CONTROLS
+   ============================================ */
+
+.flip-controls {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  opacity: 0.65;
+  transition: opacity 0.4s ease;
+  z-index: 100;
+}
+
+.flip-clock-wrapper:hover .flip-controls {
+  opacity: 1;
+}
+
+.flip-controls__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.flip-controls__btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.flip-controls__btn:active {
+  transform: scale(0.96);
+}
+
+.flip-controls__btn--active {
+  background: rgba(255, 200, 50, 0.15);
+  color: #ffd84d;
+  border: 1px solid rgba(255, 200, 50, 0.2);
+}
+
+.flip-controls__btn--active:hover {
+  background: rgba(255, 200, 50, 0.25);
+  color: #ffe066;
+}
+
+/* ============================================
+   DIGIT CARD — GPU-accelerated flip animation
+   ============================================ */
+
+.flip-card {
+  position: relative;
+  width: clamp(3rem, 8vw, 7.5rem);
+  height: clamp(4rem, 10.5vw, 10rem);
+  border-radius: 0.625rem;
+  background: linear-gradient(
+    180deg,
+    #2a2a2a 0%,
+    #222222 49.9%,
+    #1a1a1a 50.1%,
+    #181818 100%
+  );
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.6),
+    0 1px 4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transform: translateZ(0);
+  transform-style: preserve-3d;
+}
+
+.flip-card__digit {
+  display: block;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(2.5rem, 7vw, 6.5rem);
+  font-weight: 700;
+  color: #f0f0f0;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.flip-card__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  border-radius: 0.625rem 0.625rem 0 0;
+  background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+  z-index: 1;
+}
+
+.flip-card__top .flip-card__digit {
+  position: relative;
+  height: 200%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card__bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  border-radius: 0 0 0.625rem 0.625rem;
+  background: linear-gradient(180deg, #1e1e1e 0%, #1a1a1a 100%);
+  z-index: 1;
+}
+
+.flip-card__bottom .flip-card__digit {
+  position: relative;
+  height: 200%;
+  top: -100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card__flip-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  border-radius: 0.625rem 0.625rem 0 0;
+  background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+  z-index: 3;
+  transform-origin: bottom center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card__flip-top .flip-card__digit {
+  position: relative;
+  height: 200%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card__flip-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  border-radius: 0 0 0.625rem 0.625rem;
+  background: linear-gradient(180deg, #1e1e1e 0%, #1a1a1a 100%);
+  z-index: 2;
+  transform-origin: top center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform: rotateX(90deg) translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card__flip-bottom .flip-card__digit {
+  position: relative;
+  height: 200%;
+  top: -100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card__divider {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  transform: translateY(-50%);
+}
+
+/* ============================================
+   FLIP ANIMATION
+   ============================================ */
+
+.flip-card.flipping .flip-card__flip-top {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  animation: flipTop 0.3s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+}
+
+.flip-card.flipping .flip-card__flip-bottom {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  animation: flipBottom 0.3s cubic-bezier(0.37, 0, 0.63, 1) 0.3s forwards;
+}
+
+@keyframes flipTop {
+  0%   { transform: rotateX(0deg) translateZ(0); }
+  100% { transform: rotateX(-90deg) translateZ(0); }
+}
+
+@keyframes flipBottom {
+  0%   { transform: rotateX(90deg) translateZ(0); }
+  100% { transform: rotateX(0deg) translateZ(0); }
+}
+
+.flip-card.flipping::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  border-radius: 0.625rem 0.625rem 0 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 100%);
+  z-index: 5;
+  pointer-events: none;
+  animation: shadowFade 0.6s ease-out forwards;
+}
+
+@keyframes shadowFade {
+  0%   { opacity: 1; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .flip-clock-display { gap: 0.4rem; }
+  .flip-unit__cards { gap: 0.25rem; }
+  .flip-colon { gap: 0.75rem; padding: 0 0.125rem; }
+  .flip-colon__dot { width: 0.5rem; height: 0.5rem; }
+  .flip-ampm { font-size: 1.4rem; }
+  .flip-date-greeting { font-size: 0.8rem; }
+  .flip-date-weekday { font-size: 0.95rem; }
+  .flip-date-full { font-size: 0.75rem; }
+  .flip-date-time-text { font-size: 0.65rem; }
+  .flip-controls { bottom: 1rem; gap: 0.25rem; padding: 0.5rem; }
+  .flip-controls__btn { padding: 0.375rem 0.625rem; font-size: 0.7rem; }
+  .flip-controls__btn span { display: none; }
+  .flip-controls { opacity: 0.5; }
+  .flip-weather-container { width: 95vw; }
+  .weather-header-left { gap: 0.3rem; }
+  .weather-city-name { display: none; }
+  .weather-forecast-desc { display: none; }
+  .weather-forecast-precip { display: none; }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .flip-clock-display { gap: 0.5rem; }
+  .flip-weather-container { width: 90vw; }
+}
+
+@media (min-width: 1200px) {
+  .flip-clock-display { gap: 1.25rem; }
+  .flip-unit__cards { gap: 0.6rem; }
+  .flip-colon { gap: 2rem; padding: 0 0.5rem; }
+  .flip-colon__dot { width: 1rem; height: 1rem; }
+}
+
+/* ============================================
+   MIDNIGHT / NEW DAY EFFECT
+   ============================================ */
+
+.flip-card.midnight-glow {
+  animation: midnightCardGlow 5s ease-in-out infinite;
+}
+
+@keyframes midnightCardGlow {
+  0%   { box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 15px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04); }
+  50%  { box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04); }
+  100% { box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 15px rgba(255,215,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04); }
+}
+
+.flip-card.midnight-glow .flip-card__digit {
+  color: #fff8dc;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.flip-clock-display.midnight-flip-glow {
+  animation: midnightDisplayPulse 3s ease-in-out infinite;
+}
+
+@keyframes midnightDisplayPulse {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  15%  { filter: brightness(1.4); transform: scale(1.03); }
+  30%  { filter: brightness(1); transform: scale(1); }
+}
+
+.flip-clock-wrapper.midnight-effect {
+  animation: midnightBgFlash 0.8s ease-out;
+}
+
+@keyframes midnightBgFlash {
+  0%   { background-color: #000000; }
+  20%  { background-color: #0a0800; }
+  40%  { background-color: #1a1200; }
+  60%  { background-color: #0a0800; }
+  100% { background-color: #000000; }
+}
+
+.midnight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: midnightFadeIn 0.5s ease-out forwards, midnightFadeOut 1.5s ease-in 4s forwards;
+}
+
+.midnight-stars {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 30%, transparent 70%);
+  animation: midnightGlow 2s ease-in-out infinite alternate;
+}
+
+.midnight-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.confetti-particle {
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(45vh) rotate(360deg) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg) scale(0.6);
+  }
+}
+
+.midnight-ripple {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.ripple-ring {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  animation: rippleExpand 3s ease-out infinite;
+  opacity: 0;
+}
+
+@keyframes rippleExpand {
+  0% {
+    width: 10px;
+    height: 10px;
+    opacity: 0.8;
+    border-width: 3px;
+  }
+  100% {
+    width: 500px;
+    height: 500px;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.midnight-message {
+  position: relative;
+  z-index: 2;
+  animation: midnightTextIn 1s ease-out 0.3s both;
+}
+
+.midnight-message span {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255, 215, 0, 0.6),
+    0 0 40px rgba(255, 215, 0, 0.3),
+    0 0 80px rgba(255, 215, 0, 0.15);
+  letter-spacing: 0.08em;
+}
+
+@keyframes midnightFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes midnightGlow {
+  from { opacity: 0.3; }
+  to   { opacity: 0.9; }
+}
+
+@keyframes midnightTextIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(30px);
+  }
+  50% {
+    transform: scale(1.08) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes midnightFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ============================================
+   WEATHER WIDGET STYLES
+   ============================================ */
+
+.flip-weather-container {
+  width: min(85vw, 600px);
+  animation: weatherFadeIn 0.8s ease-out 0.4s both;
+}
+
+@keyframes weatherFadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.weather-widget {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.weather-widget:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.weather-widget--expanded {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Loading state */
+.weather-widget--loading {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-loading-pulse {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  animation: weatherPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes weatherPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.weather-loading-icon {
+  font-size: 1.5rem;
+}
+
+.weather-loading-text {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Error state */
+.weather-widget--error {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.weather-error-icon {
+  font-size: 1.25rem;
+}
+
+.weather-error-text {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  flex: 1;
+}
+
+.weather-retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weather-retry-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+/* Header */
+.weather-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: all 0.2s ease;
+}
+
+.weather-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.weather-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weather-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weather-city-icon {
+  font-size: 0.9rem;
+}
+
+.weather-city-name {
+  font-size: clamp(0.8rem, 2vw, 0.95rem);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
+}
+
+.weather-current-icon {
+  font-size: 1.5rem;
+}
+
+.weather-current-temp {
+  font-size: clamp(1.4rem, 3.5vw, 1.8rem);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.weather-current-desc {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+}
+
+/* Content */
+.weather-content {
+  padding: 0 1.25rem 1.25rem;
+  animation: weatherContentIn 0.3s ease-out;
+}
+
+@keyframes weatherContentIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Details grid */
+.weather-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.625rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.weather-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.625rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.weather-detail-item svg {
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.weather-detail-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.45);
+  min-width: 0;
+}
+
+.weather-detail-value {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Forecast section */
+.weather-forecast-section {
+  margin-top: 0.75rem;
+}
+
+.weather-forecast-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+.weather-forecast-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.weather-forecast-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.weather-forecast-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.weather-forecast-row--today {
+  background: rgba(255, 200, 50, 0.06);
+  border: 1px solid rgba(255, 200, 50, 0.08);
+}
+
+.weather-forecast-day {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 3.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.weather-forecast-date {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+}
+
+.weather-forecast-icon {
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.weather-forecast-desc {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weather-forecast-precip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: rgba(100, 180, 255, 0.8);
+  min-width: 2.5rem;
+  justify-content: flex-end;
+}
+
+.weather-forecast-precip svg {
+  color: rgba(100, 180, 255, 0.6);
+}
+
+.weather-forecast-precip-none {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.weather-forecast-temps {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: flex-end;
+  min-width: 3rem;
+}
+
+.weather-forecast-temp {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.weather-forecast-temp--max {
+  color: rgba(255, 200, 80, 0.9);
+}
+
+.weather-forecast-temp--min {
+  color: rgba(120, 180, 255, 0.8);
+}
+
+.weather-forecast-temp-divider {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.7rem;
+}
+
+/* Refresh & Source */
+.weather-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.72rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weather-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.weather-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.weather-source {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.25);
+  margin-top: 0.5rem;
+  text-align: right;
+}
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#000;overflow:hidden;">
+  <div class="flip-clock-wrapper" id="wrapper">
+    <!-- Midnight overlay (injected by JS) -->
+    <div id="midnight-container"></div>
+
+    <main class="flip-clock-main">
+      <div class="flip-clock-display" id="clock-display">
+        <!-- Hours -->
+        <div class="flip-unit">
+          <div class="flip-unit__cards">
+            <div class="flip-card" id="card-h0" style="perspective:400px;">
+              <div class="flip-card__top"><span class="flip-card__digit" id="top-h0">0</span></div>
+              <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-h0">0</span></div>
+              <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-h0">0</span></div>
+              <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-h0">0</span></div>
+              <div class="flip-card__divider"></div>
+            </div>
+            <div class="flip-card" id="card-h1" style="perspective:400px;">
+              <div class="flip-card__top"><span class="flip-card__digit" id="top-h1">0</span></div>
+              <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-h1">0</span></div>
+              <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-h1">0</span></div>
+              <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-h1">0</span></div>
+              <div class="flip-card__divider"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colon 1 -->
+        <div class="flip-colon">
+          <span class="flip-colon__dot" id="dot0"></span>
+          <span class="flip-colon__dot" id="dot1"></span>
+        </div>
+
+        <!-- Minutes -->
+        <div class="flip-unit">
+          <div class="flip-unit__cards">
+            <div class="flip-card" id="card-m0" style="perspective:400px;">
+              <div class="flip-card__top"><span class="flip-card__digit" id="top-m0">0</span></div>
+              <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-m0">0</span></div>
+              <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-m0">0</span></div>
+              <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-m0">0</span></div>
+              <div class="flip-card__divider"></div>
+            </div>
+            <div class="flip-card" id="card-m1" style="perspective:400px;">
+              <div class="flip-card__top"><span class="flip-card__digit" id="top-m1">0</span></div>
+              <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-m1">0</span></div>
+              <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-m1">0</span></div>
+              <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-m1">0</span></div>
+              <div class="flip-card__divider"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seconds (hidden by default) -->
+        <div id="seconds-group" style="display:none;">
+          <!-- Colon 2 -->
+          <div class="flip-colon">
+            <span class="flip-colon__dot flip-colon__dot--small" id="dot2"></span>
+            <span class="flip-colon__dot flip-colon__dot--small" id="dot3"></span>
+          </div>
+
+          <!-- Seconds -->
+          <div class="flip-unit">
+            <div class="flip-unit__cards">
+              <div class="flip-card" id="card-s0" style="perspective:400px;">
+                <div class="flip-card__top"><span class="flip-card__digit" id="top-s0">0</span></div>
+                <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-s0">0</span></div>
+                <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-s0">0</span></div>
+                <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-s0">0</span></div>
+                <div class="flip-card__divider"></div>
+              </div>
+              <div class="flip-card" id="card-s1" style="perspective:400px;">
+                <div class="flip-card__top"><span class="flip-card__digit" id="top-s1">0</span></div>
+                <div class="flip-card__bottom"><span class="flip-card__digit" id="bot-s1">0</span></div>
+                <div class="flip-card__flip-top"><span class="flip-card__digit" id="ftop-s1">0</span></div>
+                <div class="flip-card__flip-bottom"><span class="flip-card__digit" id="fbot-s1">0</span></div>
+                <div class="flip-card__divider"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AM/PM -->
+      <div class="flip-ampm" id="ampm-display" style="display:none;">
+        <span id="ampm-text">AM</span>
+      </div>
+
+      <!-- Date -->
+      <div class="flip-date-container">
+        <div class="flip-date-greeting" id="greeting"></div>
+        <div class="flip-date-weekday" id="weekday"></div>
+        <div class="flip-date-full" id="fulldate"></div>
+        <div class="flip-date-time-text" id="timetext"></div>
+      </div>
+
+      <!-- Weather Widget -->
+      <div class="flip-weather-container">
+        <div class="weather-widget" id="weather-widget">
+          <div class="weather-widget--loading" id="weather-loading">
+            <div class="weather-loading-pulse">
+              <div class="weather-loading-icon">🌡️</div>
+              <div class="weather-loading-text">Đang tải thời tiết TP.HCM...</div>
+            </div>
+          </div>
+          <div id="weather-error" style="display:none;"></div>
+          <div id="weather-data" style="display:none;"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Control Panel -->
+    <div class="flip-controls">
+      <button class="flip-controls__btn" id="btn-24h" title="24H">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>24H</span>
+      </button>
+      <button class="flip-controls__btn" id="btn-sec" title="Hiện giây">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Hiện Sec</span>
+      </button>
+    </div>
+  </div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================
+  // SVG Icon Templates
+  // ============================================
+  var SVG = {
+    thermometer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>',
+    droplets: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>',
+    droplets12: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>',
+    wind: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>',
+    sunrise: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>',
+    sunset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+    refreshCw: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+    chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m6 9 6 6 6-6"/></svg>',
+    chevronUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m18 15-6-6-6 6"/></svg>',
+    refreshCw14: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+  };
+
+  // ============================================
+  // WMO Weather Code Map (Vietnamese)
+  // ============================================
+  var weatherCodeMap = {
+    0: { desc: 'Trời quang', icon: '☀️' },
+    1: { desc: 'Hầu hết quang', icon: '🌤️' },
+    2: { desc: 'Có mây ít', icon: '⛅' },
+    3: { desc: 'Mây nhiều', icon: '☁️' },
+    45: { desc: 'Sương mù', icon: '🌫️' },
+    48: { desc: 'Sương giá', icon: '🌫️' },
+    51: { desc: 'Mưa nhẹ', icon: '🌦️' },
+    53: { desc: 'Mưa vừa', icon: '🌦️' },
+    55: { desc: 'Mưa rào', icon: '🌧️' },
+    56: { desc: 'Mưa lạnh nhẹ', icon: '🌧️' },
+    57: { desc: 'Mưa lạnh dông', icon: '🌧️' },
+    61: { desc: 'Mưa nhỏ', icon: '🌧️' },
+    63: { desc: 'Mưa vừa', icon: '🌧️' },
+    65: { desc: 'Mưa to', icon: '🌧️' },
+    66: { desc: 'Mưa lạnh nhỏ', icon: '🌨️' },
+    67: { desc: 'Mưa lạnh to', icon: '🌨️' },
+    71: { desc: 'Tuyết nhỏ', icon: '🌨️' },
+    73: { desc: 'Tuyết vừa', icon: '🌨️' },
+    75: { desc: 'Tuyết to', icon: '❄️' },
+    77: { desc: 'Hạt tuyết', icon: '🌨️' },
+    80: { desc: 'Mưa rào nhỏ', icon: '🌦️' },
+    81: { desc: 'Mưa rào vừa', icon: '🌧️' },
+    82: { desc: 'Mưa rào to', icon: '⛈️' },
+    85: { desc: 'Tuyết rào nhỏ', icon: '🌨️' },
+    86: { desc: 'Tuyết rào to', icon: '❄️' },
+    95: { desc: 'Giông bão', icon: '⛈️' },
+    96: { desc: 'Giông bão有小冰雹', icon: '⛈️' },
+    99: { desc: 'Giông bão有大冰雹', icon: '⛈️' }
+  };
+
+  function getWeatherInfo(code) {
+    return weatherCodeMap[code] || { desc: 'Không rõ', icon: '🌡️' };
+  }
+
+  function getWindDirection(deg) {
+    var dirs = ['Bắc', 'Đông Bắc', 'Đông', 'Đông Nam', 'Nam', 'Tây Nam', 'Tây', 'Tây Bắc'];
+    return dirs[Math.round(deg / 45) % 8];
+  }
+
+  function getUVLevel(uv) {
+    if (uv <= 2) return 'Thấp';
+    if (uv <= 5) return 'Trung bình';
+    if (uv <= 7) return 'Cao';
+    if (uv <= 10) return 'Rất cao';
+    return 'Cực đoan';
+  }
+
+  function formatTime(isoStr) {
+    var d = new Date(isoStr);
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : '' + n;
+  }
+
+  // ============================================
+  // Vietnamese Date Formatting
+  // ============================================
+  var weekdays = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+  function formatDateVi(date) {
+    var weekday = weekdays[date.getDay()];
+    var d = date.getDate();
+    var m = date.getMonth() + 1;
+    var y = date.getFullYear();
+    var dateStr = 'Ngày ' + d + ' tháng ' + m + ' năm ' + y;
+    var h = date.getHours();
+    var timeStr = pad2(h) + ':' + pad2(date.getMinutes()) + ':' + pad2(date.getSeconds());
+    var greeting;
+    if (h >= 5 && h < 12) greeting = 'Chào buổi sáng';
+    else if (h >= 12 && h < 18) greeting = 'Chào buổi chiều';
+    else if (h >= 18 && h < 22) greeting = 'Chào buổi tối';
+    else greeting = 'Chúc ngủ ngon';
+    return { weekday: weekday, dateStr: dateStr, timeStr: timeStr, greeting: greeting };
+  }
+
+  // ============================================
+  // Settings (localStorage)
+  // ============================================
+  function loadSetting(key, fallback) {
+    try {
+      var raw = localStorage.getItem('fliqlo_' + key);
+      if (raw !== null) return JSON.parse(raw);
+    } catch(e) {}
+    return fallback;
+  }
+
+  function saveSetting(key, value) {
+    try { localStorage.setItem('fliqlo_' + key, JSON.stringify(value)); } catch(e) {}
+  }
+
+  // ============================================
+  // State
+  // ============================================
+  var is24Hour = loadSetting('is24Hour', true);
+  var showSeconds = loadSetting('showSeconds', false);
+  var isNewYearEffect = false;
+  var midnightTimer = null;
+  var prevDateStr = '';
+  var prevHour = -1;
+
+  // ============================================
+  // DOM References
+  // ============================================
+  var wrapper = document.getElementById('wrapper');
+  var clockDisplay = document.getElementById('clock-display');
+  var secondsGroup = document.getElementById('seconds-group');
+  var ampmDisplay = document.getElementById('ampm-display');
+  var ampmText = document.getElementById('ampm-text');
+  var greetingEl = document.getElementById('greeting');
+  var weekdayEl = document.getElementById('weekday');
+  var fulldateEl = document.getElementById('fulldate');
+  var timetextEl = document.getElementById('timetext');
+  var midnightContainer = document.getElementById('midnight-container');
+
+  // Colon dots
+  var colonDots = [
+    document.getElementById('dot0'),
+    document.getElementById('dot1'),
+    document.getElementById('dot2'),
+    document.getElementById('dot3')
+  ];
+
+  // Digit card elements: [cardId, topId, botId, ftopId, fbotId]
+  var digitIds = [
+    ['card-h0', 'top-h0', 'bot-h0', 'ftop-h0', 'fbot-h0'],
+    ['card-h1', 'top-h1', 'bot-h1', 'ftop-h1', 'fbot-h1'],
+    ['card-m0', 'top-m0', 'bot-m0', 'ftop-m0', 'fbot-m0'],
+    ['card-m1', 'top-m1', 'bot-m1', 'ftop-m1', 'fbot-m1'],
+    ['card-s0', 'top-s0', 'bot-s0', 'ftop-s0', 'fbot-s0'],
+    ['card-s1', 'top-s1', 'bot-s1', 'ftop-s1', 'fbot-s1']
+  ];
+
+  // Previous digits for flip detection
+  var prevDigits = ['','','','','',''];
+
+  // Animation timers per card
+  var animTimers = {};
+  var isAnimating = {};
+
+  // ============================================
+  // Digit Card Flip
+  // ============================================
+  function flipDigit(index, newDigit) {
+    var ids = digitIds[index];
+    var card = document.getElementById(ids[0]);
+    var topEl = document.getElementById(ids[1]);
+    var botEl = document.getElementById(ids[2]);
+    var ftopEl = document.getElementById(ids[3]);
+    var fbotEl = document.getElementById(ids[4]);
+
+    var prev = prevDigits[index];
+    if (newDigit === prev) return;
+    prevDigits[index] = newDigit;
+
+    // If previous animation still running, force-complete
+    if (isAnimating[index]) {
+      if (animTimers[index]) clearTimeout(animTimers[index]);
+      card.classList.remove('flipping');
+      isAnimating[index] = false;
+    }
+
+    // Prepare flip panels
+    ftopEl.textContent = prev;    // OLD digit on flip-top
+    fbotEl.textContent = newDigit; // NEW digit on flip-bottom
+    topEl.textContent = newDigit;  // NEW digit on static top
+
+    isAnimating[index] = true;
+
+    // Force reflow
+    void card.offsetWidth;
+
+    // Trigger CSS animation
+    card.classList.add('flipping');
+
+    // Clean up after animation
+    animTimers[index] = setTimeout(function() {
+      isAnimating[index] = false;
+      card.classList.remove('flipping');
+      botEl.textContent = newDigit;
+    }, 650);
+  }
+
+  // ============================================
+  // Colon Blink
+  // ============================================
+  var colonOn = true;
+  setInterval(function() {
+    colonOn = !colonOn;
+    var opacity = colonOn ? '1' : '0.15';
+    for (var i = 0; i < colonDots.length; i++) {
+      if (colonDots[i]) colonDots[i].style.opacity = opacity;
+    }
+  }, 500);
+
+  // ============================================
+  // Time Update
+  // ============================================
+  var timeTimerRef = null;
+  var lastSec = -1;
+
+  function scheduleNextTick() {
+    var now = Date.now();
+    var msUntilNextSecond = 1000 - (now % 1000);
+    var delay = Math.max(msUntilNextSecond - 4, 1);
+    timeTimerRef = setTimeout(function() {
+      var d = new Date();
+      if (d.getSeconds() !== lastSec) {
+        lastSec = d.getSeconds();
+        updateTime(d);
+      }
+      scheduleNextTick();
+    }, delay);
+  }
+
+  function updateTime(d) {
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var s = d.getSeconds();
+
+    // Compute display hours
+    var displayH;
+    if (is24Hour) {
+      displayH = pad2(h);
+    } else {
+      var h12 = h % 12;
+      displayH = pad2(h12 === 0 ? 12 : h12);
+    }
+
+    var displayM = pad2(m);
+    var displayS = pad2(s);
+    var ampm = h >= 12 ? 'PM' : 'AM';
+
+    // Flip digits
+    flipDigit(0, displayH.charAt(0));
+    flipDigit(1, displayH.charAt(1));
+    flipDigit(2, displayM.charAt(0));
+    flipDigit(3, displayM.charAt(1));
+    flipDigit(4, displayS.charAt(0));
+    flipDigit(5, displayS.charAt(1));
+
+    // AM/PM
+    if (!is24Hour) {
+      ampmDisplay.style.display = 'flex';
+      ampmText.textContent = ampm;
+    } else {
+      ampmDisplay.style.display = 'none';
+    }
+
+    // Date info
+    var dateInfo = formatDateVi(d);
+    greetingEl.textContent = dateInfo.greeting;
+    weekdayEl.textContent = dateInfo.weekday;
+    fulldateEl.textContent = dateInfo.dateStr;
+    timetextEl.textContent = dateInfo.timeStr;
+
+    // Detect midnight / new day
+    var currentDate = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    var currentHour = d.getHours();
+
+    if (prevDateStr && prevDateStr !== currentDate) {
+      triggerMidnightEffect();
+    }
+    if (prevHour === 23 && currentHour === 0) {
+      triggerMidnightEffect();
+    }
+
+    prevDateStr = currentDate;
+    prevHour = currentHour;
+  }
+
+  // ============================================
+  // Midnight / New Day Effect
+  // ============================================
+  function triggerMidnightEffect() {
+    if (isNewYearEffect) return;
+    isNewYearEffect = true;
+
+    wrapper.classList.add('midnight-effect');
+    clockDisplay.classList.add('midnight-flip-glow');
+
+    // Add midnight-glow to all cards
+    var cards = document.querySelectorAll('.flip-card');
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].classList.add('midnight-glow');
+    }
+
+    // Create overlay
+    var confettiColors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#ff9ff3', '#54a0ff'];
+
+    var overlayHTML = '<div class="midnight-overlay">';
+    overlayHTML += '<div class="midnight-stars"></div>';
+
+    // Confetti particles
+    overlayHTML += '<div class="midnight-confetti">';
+    for (var ci = 0; ci < 40; ci++) {
+      var left = (Math.random() * 100).toFixed(2);
+      var delay = (Math.random() * 2).toFixed(2);
+      var duration = (2 + Math.random() * 3).toFixed(2);
+      var w = (6 + Math.random() * 8).toFixed(1);
+      var h = (6 + Math.random() * 8).toFixed(1);
+      var color = confettiColors[ci % 7];
+      overlayHTML += '<div class="confetti-particle" style="left:' + left + '%;animation-delay:' + delay + 's;animation-duration:' + duration + 's;background-color:' + color + ';width:' + w + 'px;height:' + h + 'px;"></div>';
+    }
+    overlayHTML += '</div>';
+
+    // Ripple rings
+    overlayHTML += '<div class="midnight-ripple">';
+    overlayHTML += '<div class="ripple-ring" style="animation-delay:0s;"></div>';
+    overlayHTML += '<div class="ripple-ring" style="animation-delay:0.5s;"></div>';
+    overlayHTML += '<div class="ripple-ring" style="animation-delay:1s;"></div>';
+    overlayHTML += '</div>';
+
+    // Message
+    overlayHTML += '<div class="midnight-message"><span>Chúc mừng ngày mới!</span></div>';
+    overlayHTML += '</div>';
+
+    midnightContainer.innerHTML = overlayHTML;
+
+    // Auto-remove after 5 seconds
+    midnightTimer = setTimeout(function() {
+      isNewYearEffect = false;
+      wrapper.classList.remove('midnight-effect');
+      clockDisplay.classList.remove('midnight-flip-glow');
+      for (var j = 0; j < cards.length; j++) {
+        cards[j].classList.remove('midnight-glow');
+      }
+      midnightContainer.innerHTML = '';
+    }, 5000);
+  }
+
+  // ============================================
+  // Controls
+  // ============================================
+  var btn24h = document.getElementById('btn-24h');
+  var btnSec = document.getElementById('btn-sec');
+
+  btn24h.addEventListener('click', function() {
+    is24Hour = !is24Hour;
+    saveSetting('is24Hour', is24Hour);
+    var iconSvg = is24Hour ? SVG.clock : SVG.clock;
+    var label = is24Hour ? '24H' : '12H';
+    btn24h.innerHTML = iconSvg + '<span>' + label + '</span>';
+    btn24h.title = is24Hour ? '12H' : '24H';
+    // Force update current time to refresh digits
+    updateTime(new Date());
+  });
+
+  btnSec.addEventListener('click', function() {
+    showSeconds = !showSeconds;
+    saveSetting('showSeconds', showSeconds);
+    secondsGroup.style.display = showSeconds ? '' : 'none';
+    var iconSvg = showSeconds ? SVG.eyeOff : SVG.eye;
+    var label = showSeconds ? 'Ẩn Sec' : 'Hiện Sec';
+    btnSec.innerHTML = iconSvg + '<span>' + label + '</span>';
+    btnSec.title = showSeconds ? 'Ẩn giây' : 'Hiện giây';
+  });
+
+  // Initialize controls display
+  (function initControls() {
+    btn24h.innerHTML = SVG.clock + '<span>' + (is24Hour ? '24H' : '12H') + '</span>';
+    btn24h.title = is24Hour ? '12H' : '24H';
+    secondsGroup.style.display = showSeconds ? '' : 'none';
+    btnSec.innerHTML = (showSeconds ? SVG.eyeOff : SVG.eye) + '<span>' + (showSeconds ? 'Ẩn Sec' : 'Hiện Sec') + '</span>';
+    btnSec.title = showSeconds ? 'Ẩn giây' : 'Hiện giây';
+    if (!is24Hour) {
+      ampmDisplay.style.display = 'flex';
+    }
+  })();
+
+  // ============================================
+  // Visibility change handling
+  // ============================================
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      if (timeTimerRef) clearTimeout(timeTimerRef);
+      var d = new Date();
+      if (d.getSeconds() !== lastSec) {
+        lastSec = d.getSeconds();
+        updateTime(d);
+      }
+      scheduleNextTick();
+    }
+  });
+
+  // ============================================
+  // Weather Widget
+  // ============================================
+  var weatherData = null;
+  var weatherLoading = document.getElementById('weather-loading');
+  var weatherError = document.getElementById('weather-error');
+  var weatherDataEl = document.getElementById('weather-data');
+  var weatherWidget = document.getElementById('weather-widget');
+  var weatherExpanded = false;
+  var weatherRefreshing = false;
+  var weatherAutoRefreshTimer = null;
+
+  var WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=10.8231&longitude=106.6297&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset,uv_index_max&timezone=Asia/Ho_Chi_Minh&forecast_days=7';
+
+  function fetchWeather(isRefresh) {
+    if (isRefresh) {
+      weatherRefreshing = true;
+    } else {
+      weatherLoading.style.display = '';
+      weatherError.style.display = 'none';
+      weatherDataEl.style.display = 'none';
+    }
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 10000);
+
+    fetch(WEATHER_API_URL, { signal: controller.signal })
+      .then(function(res) {
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error('Weather API error: ' + res.status);
+        return res.json();
+      })
+      .then(function(json) {
+        var current = json.current;
+        var daily = json.daily;
+
+        var currentWeather = {
+          temperature: Math.round(current.temperature_2m),
+          apparentTemperature: Math.round(current.apparent_temperature),
+          humidity: current.relative_humidity_2m,
+          precipitation: current.precipitation,
+          weatherCode: current.weather_code,
+          weatherInfo: getWeatherInfo(current.weather_code),
+          windSpeed: Math.round(current.wind_speed_10m),
+          windDirection: current.wind_direction_10m,
+          uvIndex: Math.round(current.uv_index || 0)
+        };
+
+        var daysVi = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        var forecast = [];
+        for (var i = 0; i < daily.time.length; i++) {
+          var dd = new Date(daily.time[i] + 'T00:00:00');
+          forecast.push({
+            date: daily.time[i],
+            dayName: daysVi[dd.getDay()],
+            dateStr: dd.getDate() + '/' + (dd.getMonth() + 1),
+            weatherCode: daily.weather_code[i],
+            weatherInfo: getWeatherInfo(daily.weather_code[i]),
+            tempMax: Math.round(daily.temperature_2m_max[i]),
+            tempMin: Math.round(daily.temperature_2m_min[i]),
+            precipProb: daily.precipitation_probability_max[i],
+            windMax: Math.round(daily.wind_speed_10m_max[i]),
+            sunrise: daily.sunrise[i],
+            sunset: daily.sunset[i],
+            uvIndexMax: daily.uv_index_max[i]
+          });
+        }
+
+        weatherData = { city: 'Thành phố Hồ Chí Minh', current: currentWeather, forecast: forecast };
+        weatherLoading.style.display = 'none';
+        weatherError.style.display = 'none';
+        renderWeather();
+        weatherDataEl.style.display = '';
+      })
+      .catch(function(err) {
+        clearTimeout(timeoutId);
+        weatherLoading.style.display = 'none';
+        var errorMsg = 'Không thể lấy dữ liệu thời tiết. Vui lòng thử lại sau.';
+        if (err.name === 'AbortError') {
+          errorMsg = 'Hết thời gian tải dữ liệu.';
+        }
+        weatherError.innerHTML =
+          '<div class="weather-widget--error">' +
+            '<span class="weather-error-icon">⚠️</span>' +
+            '<span class="weather-error-text">' + errorMsg + '</span>' +
+            '<button class="weather-retry-btn" id="weather-retry-btn">' +
+              SVG.refreshCw + '<span>Thử lại</span>' +
+            '</button>' +
+          '</div>';
+        weatherError.style.display = '';
+        weatherDataEl.style.display = 'none';
+
+        document.getElementById('weather-retry-btn').addEventListener('click', function() {
+          fetchWeather(true);
+        });
+      })
+      .finally(function() {
+        weatherRefreshing = false;
+      });
+  }
+
+  function renderWeather() {
+    if (!weatherData) return;
+
+    var cur = weatherData.current;
+    var today = weatherData.forecast[0];
+    var forecast = weatherData.forecast;
+
+    var expandedClass = weatherExpanded ? ' weather-widget--expanded' : '';
+    var chevronIcon = weatherExpanded ? SVG.chevronUp : SVG.chevronDown;
+
+    var html = '';
+
+    // Header
+    html += '<button class="weather-header" id="weather-header-btn">';
+    html += '<div class="weather-header-left">';
+    html += '<span class="weather-city-icon">📍</span>';
+    html += '<span class="weather-city-name">TP. Hồ Chí Minh</span>';
+    html += '<span class="weather-current-icon">' + cur.weatherInfo.icon + '</span>';
+    html += '<span class="weather-current-temp">' + cur.temperature + '°</span>';
+    html += '</div>';
+    html += '<div class="weather-header-right">';
+    html += '<span class="weather-current-desc">' + cur.weatherInfo.desc + '</span>';
+    html += chevronIcon;
+    html += '</div>';
+    html += '</button>';
+
+    // Expanded content
+    if (weatherExpanded) {
+      html += '<div class="weather-content">';
+
+      // Details grid
+      html += '<div class="weather-details-grid">';
+
+      // Cảm giác
+      html += '<div class="weather-detail-item">';
+      html += SVG.thermometer;
+      html += '<span class="weather-detail-label">Cảm giác</span>';
+      html += '<span class="weather-detail-value">' + cur.apparentTemperature + '°C</span>';
+      html += '</div>';
+
+      // Độ ẩm
+      html += '<div class="weather-detail-item">';
+      html += SVG.droplets;
+      html += '<span class="weather-detail-label">Độ ẩm</span>';
+      html += '<span class="weather-detail-value">' + cur.humidity + '%</span>';
+      html += '</div>';
+
+      // Gió
+      html += '<div class="weather-detail-item">';
+      html += SVG.wind;
+      html += '<span class="weather-detail-label">Gió</span>';
+      html += '<span class="weather-detail-value">' + cur.windSpeed + ' km/h ' + getWindDirection(cur.windDirection) + '</span>';
+      html += '</div>';
+
+      // Mưa
+      html += '<div class="weather-detail-item">';
+      html += SVG.droplets;
+      html += '<span class="weather-detail-label">Mưa</span>';
+      html += '<span class="weather-detail-value">' + cur.precipitation + ' mm</span>';
+      html += '</div>';
+
+      // Bình minh
+      html += '<div class="weather-detail-item">';
+      html += SVG.sunrise;
+      html += '<span class="weather-detail-label">Bình minh</span>';
+      html += '<span class="weather-detail-value">' + formatTime(today.sunrise) + '</span>';
+      html += '</div>';
+
+      // Hoàng hôn
+      html += '<div class="weather-detail-item">';
+      html += SVG.sunset;
+      html += '<span class="weather-detail-label">Hoàng hôn</span>';
+      html += '<span class="weather-detail-value">' + formatTime(today.sunset) + '</span>';
+      html += '</div>';
+
+      // UV - current + max on one line
+      html += '<div class="weather-detail-item">';
+      html += SVG.sun;
+      html += '<span class="weather-detail-label">UV</span>';
+      html += '<span class="weather-detail-value">' + cur.uvIndex + ' (' + getUVLevel(cur.uvIndex) + ') / Cao nhất ' + today.uvIndexMax + ' (' + getUVLevel(today.uvIndexMax) + ')</span>';
+      html += '</div>';
+
+      html += '</div>'; // end details-grid
+
+      // 7-day forecast
+      html += '<div class="weather-forecast-section">';
+      html += '<div class="weather-forecast-title">Dự báo 7 ngày</div>';
+      html += '<div class="weather-forecast-list">';
+
+      for (var fi = 0; fi < forecast.length; fi++) {
+        var day = forecast[fi];
+        var todayClass = fi === 0 ? ' weather-forecast-row--today' : '';
+        var dayLabel = fi === 0 ? 'Hôm nay' : day.dayName;
+
+        html += '<div class="weather-forecast-row' + todayClass + '">';
+        html += '<span class="weather-forecast-day">' + dayLabel + '<span class="weather-forecast-date">' + day.dateStr + '</span></span>';
+        html += '<span class="weather-forecast-icon">' + day.weatherInfo.icon + '</span>';
+        html += '<span class="weather-forecast-desc">' + day.weatherInfo.desc + '</span>';
+
+        // Precip
+        html += '<span class="weather-forecast-precip">';
+        if (day.precipProb > 0) {
+          html += SVG.droplets12 + day.precipProb + '%';
+        } else {
+          html += '<span class="weather-forecast-precip-none">—</span>';
+        }
+        html += '</span>';
+
+        // Temps
+        html += '<div class="weather-forecast-temps">';
+        html += '<span class="weather-forecast-temp weather-forecast-temp--max">' + day.tempMax + '°</span>';
+        html += '<span class="weather-forecast-temp-divider">/</span>';
+        html += '<span class="weather-forecast-temp weather-forecast-temp--min">' + day.tempMin + '°</span>';
+        html += '</div>';
+
+        html += '</div>';
+      }
+
+      html += '</div>'; // end forecast-list
+      html += '</div>'; // end forecast-section
+
+      // Refresh button
+      var spinClass = weatherRefreshing ? ' weather-spin' : '';
+      html += '<button class="weather-refresh-btn" id="weather-refresh-btn">';
+      html += '<span' + (spinClass ? ' class="' + spinClass.trim() + '"' : '') + '>' + SVG.refreshCw14 + '</span>';
+      html += '<span>Cập nhật</span>';
+      html += '</button>';
+
+      // Source
+      html += '<div class="weather-source">Nguồn: Open-Meteo</div>';
+
+      html += '</div>'; // end weather-content
+    }
+
+    weatherWidget.className = 'weather-widget' + expandedClass;
+    weatherDataEl.innerHTML = html;
+
+    // Bind events after render
+    document.getElementById('weather-header-btn').addEventListener('click', function() {
+      weatherExpanded = !weatherExpanded;
+      renderWeather();
+    });
+
+    if (weatherExpanded) {
+      var refreshBtn = document.getElementById('weather-refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          fetchWeather(true);
+        });
+      }
+    }
+  }
+
+  // ============================================
+  // Initialize
+  // ============================================
+  // Set initial time
+  var now = new Date();
+  prevDateStr = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
+  prevHour = now.getHours();
+  updateTime(now);
+
+  // Start the time tick
+  scheduleNextTick();
+
+  // Start weather fetch
+  fetchWeather(false);
+
+  // Auto-refresh weather every 180 seconds
+  weatherAutoRefreshTimer = setInterval(function() {
+    fetchWeather(false);
+  }, 180000);
+
+})();
+</script>
+</body>
+</html>
